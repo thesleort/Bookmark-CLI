@@ -1,0 +1,6 @@
+#!/bin/bash
+# bmk shim — ensures the C++ binary is in PATH when sourced
+# Usage: eval "$(bmk go myproject)"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/bmk" "$@"
