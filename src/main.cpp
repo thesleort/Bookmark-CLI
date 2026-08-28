@@ -319,21 +319,21 @@ static void cmd_mkenv() {
 }
 
 static void print_usage() {
-	std::cout << R"(bmk — Bookmark Manager
-
-Usage:
-  bmk ls              List all bookmarks
-  bmk go <name>       Jump to bookmark (use: eval $(bmk go <name>))
-  bmk add <name>      Add current directory as bookmark
-  bmk rm <name>       Remove a bookmark
-  bmk rename <old> <new>  Rename a bookmark
-  bmk load            Source .bmkenv in current directory
-  bmk mkenv           Create a boilerplate .bmkenv file
-
-Notes:
-  - Bookmarks are stored in: ~/.local/share/bmk/bookmarks/
-  - Each bookmark is a file containing the target directory path
-  - Use eval $(bmk go <name>) to change directory and load .bmkenv)";
+	auto data_dir = get_data_dir();
+	std::cout << "bmk — Bookmark Manager\n"
+			  << "\n"
+			  << "Usage:\n"
+			  << "  bmk ls              List all bookmarks\n"
+			  << "  bmk go <name>       Navigate to bookmarked directory and load .bmkenv\n"
+			  << "  bmk add <name>      Add current directory as bookmark\n"
+			  << "  bmk rm <name>       Remove a bookmark\n"
+			  << "  bmk rename <old> <new>  Rename a bookmark\n"
+			  << "  bmk load            Source .bmkenv in current directory\n"
+			  << "  bmk mkenv           Create a boilerplate .bmkenv file\n"
+			  << "\n"
+			  << "Notes:\n"
+			  << "  - Bookmarks are stored in: " << data_dir / "bookmarks" << "\n"
+			  << "  - Use bmk go <name> to change directory and load .bmkenv\n";
 }
 
 int main(int argc, char* argv[]) {
