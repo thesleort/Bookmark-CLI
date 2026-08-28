@@ -17,6 +17,7 @@ clean:
 
 install: build
 	@mkdir -p $(BINARY_DIR)
+	@mkdir -p $(BIN)
 	@cp build/bmkbin $(BINARY_DIR)/bmkbin
 	@cp scripts/bmk-wrapper.sh $(BIN)/bmk
 	@chmod +x $(BINARY_DIR)/bmkbin $(BIN)/bmk
