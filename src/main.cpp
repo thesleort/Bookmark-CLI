@@ -10,8 +10,15 @@
 
 namespace fs = std::filesystem;
 
-// ── Config ──────────────────────────────────────────────────────────────────
+// -- Config ------------------------------------------------------------------
+
 static const char* DATA_DIR_ENV = "BMK_DATA_DIR";
+
+/**
+ * @brief Get the data directory path
+ * 
+ * @return fs::path 
+ */
 static fs::path get_data_dir() {
 	const char* env = std::getenv(DATA_DIR_ENV);
 	if (env && fs::exists(env)) {
@@ -25,26 +32,42 @@ static fs::path get_data_dir() {
 	return fs::path(home) / ".local" / "share" / "bmk";
 }
 
+/**
+ * @brief Get the bookmarks directory path
+ * 
+ * @return fs::path 
+ */
 static fs::path get_bookmarks_dir() {
-	auto d = get_data_dir();
-	fs::create_directories(d / "bookmarks");
-	return d / "bookmarks";
+	auto data_dir = get_data_dir();
+	fs::create_directories(data_dir / "bookmarks");
+	return data_dir / "bookmarks";
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// -- Helpers -----------------------------------------------------------------
+
+/**
+ * @brief Ensure bmkenv directory exists
+ * 
+ */
 static void ensure_bmkenv_dir() {
-	auto d = get_data_dir();
-	fs::create_directories(d / "templates");
+	auto data_dir = get_data_dir();
+	fs::create_directories(data_dir / "templates");
 }
 
+/**
+ * @brief Finds the bmkenv environment file
+ * 
+ * @param dir 
+ * @return fs::path 
+ */
 static fs::path find_bmkenv(const fs::path& dir) {
-	fs::path current = fs::weakly_canonical(dir);
+	fs::path current_path = fs::weakly_canonical(dir);
 	while (true) {
-		auto p = current / ".bmkenv";
+		auto p = current_path / ".bmkenv";
 		if (fs::exists(p)) return p;
-		auto parent = current.parent_path();
-		if (parent == current) break; // reached root
-		current = parent;
+		auto parent = current_path.parent_path();
+		if (parent == current_path) break; // reached root
+		current_path = parent;
 	}
 	return {};
 }
@@ -62,32 +85,42 @@ static std::string resolve_path(const std::string& input) {
 	return fs::weakly_canonical(p).string();
 }
 
-// ── Commands ────────────────────────────────────────────────────────────────
+// -- Commands ----------------------------------------------------------------
 
+/**
+ * @brief Add new bookmark
+ * 
+ * @param name 
+ */
 static void cmd_add(const std::string& name) {
-	auto bdir = get_bookmarks_dir();
-	fs::path bmfile = bdir / name;
+	auto bookmarks_dir = get_bookmarks_dir();
+	fs::path bookmark_file = bookmarks_dir / name;
 
-	if (fs::exists(bmfile)) {
+	if (fs::exists(bookmark_file)) {
 		std::cerr << "Error: bookmark '" << name << "' already exists" << std::endl;
 		exit(1);
 	}
 
 	std::string target = fs::weakly_canonical(fs::current_path()).string();
-	std::ofstream ofs(bmfile);
+	std::ofstream ofs(bookmark_file);
 	if (!ofs) {
-		std::cerr << "Error: cannot write to " << bmfile.string() << std::endl;
+		std::cerr << "Error: cannot write to " << bookmark_file.string() << std::endl;
 		exit(1);
 	}
 	ofs << target << "\n";
 	std::cout << "Added bookmark '" << name << "' -> " << target << std::endl;
 }
 
+/**
+ * @brief Remove existing bookmark
+ * 
+ * @param name 
+ */
 static void cmd_rm(const std::string& name) {
-	auto bdir = get_bookmarks_dir();
-	fs::path bmfile = bdir / name;
+	auto bookmarks_dir = get_bookmarks_dir();
+	fs::path bookmark_file = bookmarks_dir / name;
 
-	if (!fs::exists(bmfile)) {
+	if (!fs::exists(bookmark_file)) {
 		std::cerr << "Error: bookmark '" << name << "' not found" << std::endl;
 		exit(1);
 	}
@@ -96,47 +129,57 @@ static void cmd_rm(const std::string& name) {
 	std::cout << "Removed bookmark '" << name << "'" << std::endl;
 }
 
+/**
+ * @brief Rename existing bookmark
+ * 
+ * @param old_name 
+ * @param new_name 
+ */
 static void cmd_rename(const std::string& old_name, const std::string& new_name) {
-	auto bdir = get_bookmarks_dir();
-	fs::path old_bmfile = bdir / old_name;
-	fs::path new_bmfile = bdir / new_name;
+	auto bookmarks_dir = get_bookmarks_dir();
+	fs::path old_bookmark_file = bookmarks_dir / old_name;
+	fs::path new_bookmark_file = bookmarks_dir / new_name;
 
-	if (!fs::exists(old_bmfile)) {
+	if (!fs::exists(old_bookmark_file)) {
 		std::cerr << "Error: bookmark '" << old_name << "' not found" << std::endl;
 		exit(1);
 	}
 
-	if (fs::exists(new_bmfile)) {
+	if (fs::exists(new_bookmark_file)) {
 		std::cerr << "Error: bookmark '" << new_name << "' already exists" << std::endl;
 		exit(1);
 	}
 
 	// Create parent directories for new name (supports e.g. 'website/exhibitions')
-	auto parent_dir = new_bmfile.parent_path();
-	if (!parent_dir.empty() && parent_dir != bdir) {
+	auto parent_dir = new_bookmark_file.parent_path();
+	if (!parent_dir.empty() && parent_dir != bookmarks_dir) {
 		fs::create_directories(parent_dir);
 	}
 
-	fs::rename(old_bmfile, new_bmfile);
+	fs::rename(old_bookmark_file, new_bookmark_file);
 	std::cout << "Renamed bookmark '" << old_name << "' -> '" << new_name << "'" << std::endl;
 }
 
+/**
+ * @brief List all current bookmarks
+ * 
+ */
 static void cmd_ls() {
-	auto bdir = get_bookmarks_dir();
-	if (!fs::exists(bdir) || fs::is_empty(bdir)) {
+	auto bookmarks_dir = get_bookmarks_dir();
+	if (!fs::exists(bookmarks_dir) || fs::is_empty(bookmarks_dir)) {
 		std::cout << "No bookmarks found." << std::endl;
 		return;
 	}
 
 	// Collect and sort — use recursive_iterator to handle subdirectory bookmarks
 	std::vector<std::pair<std::string, std::string>> bookmarks;
-	for (const auto& entry : fs::recursive_directory_iterator(bdir)) {
+	for (const auto& entry : fs::recursive_directory_iterator(bookmarks_dir)) {
 		if (entry.is_regular_file()) {
 			std::ifstream ifs(entry.path());
 			std::string path;
 			std::getline(ifs, path);
 			// Use relative path from bookmarks dir as the bookmark name
-			std::string name = fs::relative(entry.path(), bdir).string();
+			std::string name = fs::relative(entry.path(), bookmarks_dir).string();
 			bookmarks.push_back({name, path});
 		}
 	}
@@ -162,16 +205,21 @@ static void cmd_ls() {
 	}
 }
 
+/**
+ * @brief Go to specified bookmark
+ * 
+ * @param name 
+ */
 static void cmd_go(const std::string& name) {
-	auto bdir = get_bookmarks_dir();
-	fs::path bmfile = bdir / name;
+	auto bookmark_dir = get_bookmarks_dir();
+	fs::path bookmark_file = bookmark_dir / name;
 
-	if (!fs::exists(bmfile)) {
+	if (!fs::exists(bookmark_file)) {
 		std::cerr << "Error: bookmark '" << name << "' not found" << std::endl;
 		exit(1);
 	}
 
-	std::ifstream ifs(bmfile);
+	std::ifstream ifs(bookmark_file);
 	std::string target;
 	if (!std::getline(ifs, target) || target.empty()) {
 		std::cerr << "Error: bookmark '" << name << "' is empty" << std::endl;
@@ -199,24 +247,34 @@ static void cmd_go(const std::string& name) {
 	std::cout << std::endl;
 }
 
+/**
+ * @brief Loads the bmkenv in the current directory.
+ * 
+ * This is useful if the user has not navigated to the directory using bmk.
+ * 
+ */
 static void cmd_load() {
-	std::string current;
+	std::string current_path;
 	try {
-		current = fs::current_path().string();
+		current_path = fs::current_path().string();
 	} catch (const std::exception& e) {
 		std::cerr << "Error: cannot determine current directory" << std::endl;
 		exit(1);
 	}
 
-	fs::path bmkenv_path = find_bmkenv(current);
+	fs::path bmkenv_path = find_bmkenv(current_path);
 	if (bmkenv_path.empty()) {
-		std::cout << "# No .bmkenv found in " << current << std::endl;
+		std::cout << "# No .bmkenv found in " << current_path << std::endl;
 		return;
 	}
 
 	std::cout << "source .bmkenv" << std::endl;
 }
 
+/**
+ * @brief Creates a new bmkenv in the current directory
+ * 
+ */
 static void cmd_mkenv() {
 	ensure_bmkenv_dir();
 
