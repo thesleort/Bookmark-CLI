@@ -1,3 +1,15 @@
+/**
+ * @file main.cpp
+ * @author Troels Blicher Petersen
+ * @brief 
+ * @version 1.0
+ * @date 2026-08-28
+ * 
+ * @copyright Copyright (c) 2026
+ * 
+ */
+
+
 #include <iostream>
 #include <string>
 #include <filesystem>
