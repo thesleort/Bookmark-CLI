@@ -137,7 +137,7 @@ static void cmd_rm(const std::string& name) {
 		exit(1);
 	}
 
-	fs::remove(bmfile);
+	fs::remove(bookmark_file);
 	std::cout << "Removed bookmark '" << name << "'" << std::endl;
 }
 
