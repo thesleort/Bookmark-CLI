@@ -58,6 +58,23 @@ static fs::path get_bookmarks_dir() {
 // -- Helpers -----------------------------------------------------------------
 
 /**
+ * @brief Append .bmk extension to a bookmark name.
+ */
+static std::string bookmark_filename(const std::string& name) {
+	return name + ".bmk";
+}
+
+/**
+ * @brief Strip .bmk extension from a stored filename to get the display name.
+ */
+static std::string strip_bmk_extension(const std::string& filename) {
+	if (filename.size() > 4 && filename.substr(filename.size() - 4) == ".bmk") {
+		return filename.substr(0, filename.size() - 4);
+	}
+	return filename;
+}
+
+/**
  * @brief Find the bookmark name that points to a given directory.
  *
  * Searches all bookmarks (recursively) for one whose content matches dir.
@@ -78,7 +95,9 @@ static std::string find_bookmark_name_for_dir(const fs::path& dir) {
 			if (std::getline(ifs, path)) {
 				try {
 					if (fs::weakly_canonical(path) == canonical_dir) {
-						return fs::relative(entry.path(), bookmarks_dir).string();
+						return strip_bmk_extension(
+							fs::relative(entry.path(), bookmarks_dir).string()
+						);
 					}
 				} catch (...) {
 					// skip entries that fail canonicalization
@@ -142,7 +161,7 @@ static std::string resolve_path(const std::string& input) {
  */
 static void cmd_add(const std::string& name) {
 	auto bookmarks_dir = get_bookmarks_dir();
-	fs::path bookmark_file = bookmarks_dir / name;
+	fs::path bookmark_file = bookmarks_dir / bookmark_filename(name);
 
 	if (fs::exists(bookmark_file)) {
 		std::cerr << "Error: bookmark '" << name << "' already exists" << std::endl;
@@ -166,7 +185,7 @@ static void cmd_add(const std::string& name) {
  */
 static void cmd_rm(const std::string& name) {
 	auto bookmarks_dir = get_bookmarks_dir();
-	fs::path bookmark_file = bookmarks_dir / name;
+	fs::path bookmark_file = bookmarks_dir / bookmark_filename(name);
 
 	if (!fs::exists(bookmark_file)) {
 		std::cerr << "Error: bookmark '" << name << "' not found" << std::endl;
@@ -191,8 +210,8 @@ static void cmd_rm(const std::string& name) {
  */
 static void cmd_rename(const std::string& old_name, const std::string& new_name) {
 	auto bookmarks_dir = get_bookmarks_dir();
-	fs::path old_bookmark_file = bookmarks_dir / old_name;
-	fs::path new_bookmark_file = bookmarks_dir / new_name;
+	fs::path old_bookmark_file = bookmarks_dir / bookmark_filename(old_name);
+	fs::path new_bookmark_file = bookmarks_dir / bookmark_filename(new_name);
 
 	if (!fs::exists(old_bookmark_file)) {
 		std::cerr << "Error: bookmark '" << old_name << "' not found" << std::endl;
@@ -239,8 +258,10 @@ static void cmd_ls() {
 			std::ifstream ifs(entry.path());
 			std::string path;
 			std::getline(ifs, path);
-			// Use relative path from bookmarks dir as the bookmark name
-			std::string name = fs::relative(entry.path(), bookmarks_dir).string();
+			// Use relative path from bookmarks dir as the bookmark name (strip .bmk)
+			std::string name = strip_bmk_extension(
+				fs::relative(entry.path(), bookmarks_dir).string()
+			);
 			bookmarks.push_back({name, path});
 		}
 	}
@@ -273,7 +294,7 @@ static void cmd_ls() {
  */
 static void cmd_go(const std::string& name) {
 	auto bookmark_dir = get_bookmarks_dir();
-	fs::path bookmark_file = bookmark_dir / name;
+	fs::path bookmark_file = bookmark_dir / bookmark_filename(name);
 
 	if (!fs::exists(bookmark_file)) {
 		std::cerr << "Error: bookmark '" << name << "' not found" << std::endl;
@@ -428,7 +449,7 @@ Usage:
 
 Notes:
   - Bookmarks are stored in: ~/.local/share/bmk/bookmarks/
-  - Each bookmark is a file containing the target directory path
+  - Each bookmark is a <name>.bmk file containing the target directory path
   - Global .bmkenv files are stored as <bookmarks_dir>/<name>.bmkenv
   - .bmkenv lookup: local first (in directory tree), then global fallback
   - Use eval $(bmk go <name>) to change directory and load .bmkenv)";
