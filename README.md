@@ -65,6 +65,12 @@ bmk load
 
 # Create a boilerplate .bmkenv file
 bmk mkenv
+
+# Create a global .bmkenv for the current directory's bookmark
+bmk globalenv
+
+# Edit the global .bmkenv for the current directory's bookmark
+bmk editenv
 ```
 
 ## Storage
@@ -78,7 +84,21 @@ Bookmarks are stored in `~/.local/share/bmk/bookmarks/`:
 └── server
 ```
 
-Each file contains the absolute path to the bookmarked directory.
+Each bookmark file contains the absolute path to the bookmarked directory.
+
+Global `.bmkenv` files are stored alongside the bookmark files:
+
+```
+~/.local/share/bmk/bookmarks/
+├── myproject
+├── myproject.bmkenv
+├── work
+└── server
+```
+
+The `.bmkenv` lookup priority is:
+1. **Local**: `.bmkenv` in the directory tree (up to root)
+2. **Global**: `<bookmarks_dir>/<bookmark_name>.bmkenv` (fallback)
 
 ## .bmkenv Format
 
@@ -106,6 +126,17 @@ Use `bmk mkenv` to create a boilerplate `.bmkenv` file in the current directory.
 | Variable        | Description                           | Default                          |
 |-----------------|---------------------------------------|----------------------------------|
 | `BMK_DATA_DIR`  | Override the data directory location  | `~/.local/share/bmk`            |
+| `BMK_EDITOR`    | Editor used by `bmk mkenv`/`bmk editenv` | `nano`                        |
+
+## Editor Configuration
+
+When using `bmk mkenv` or `bmk editenv`, the created `.bmkenv` file is opened in your configured editor. By default, this is `nano`. You can override it by setting the `BMK_EDITOR` environment variable:
+
+```bash
+export BMK_EDITOR="vim"
+# or
+export BMK_EDITOR="code --wait"
+```
 
 ## Directory Layout
 
@@ -113,9 +144,9 @@ Use `bmk mkenv` to create a boilerplate `.bmkenv` file in the current directory.
 ~/.local/bmk/
 ├── bmk           ← shell wrapper (your "bmk" command)
 ├── bmkbin        ← compiled C++ binary
-└── completion.bash  ← bash tab completion
+├── completion.bash  ← bash tab completion
+└── completion.zsh   ← zsh tab completion
 ```
-| `BMK_BIN_PATH`  | Path to bmk binary (used in shell)    | Auto-detected                    |
 
 ## Build Requirements
 
