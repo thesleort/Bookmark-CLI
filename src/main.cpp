@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <sys/stat.h>
 #include <vector>
+#include <cstdlib>
 
 namespace fs = std::filesystem;
 
@@ -152,6 +153,26 @@ static std::string resolve_path(const std::string& input) {
 	return fs::weakly_canonical(p).string();
 }
 
+/**
+ * @brief Get the editor command to use (default: nano).
+ */
+static std::string get_editor() {
+	const char* env = std::getenv("BMK_EDITOR");
+	if (env && std::string(env).length() > 0) {
+		return std::string(env);
+	}
+	return "nano";
+}
+
+/**
+ * @brief Open a file in the configured editor.
+ */
+static void open_editor(const fs::path& file) {
+	std::string editor = get_editor();
+	int ret = std::system((editor + " \"" + file.string() + "\"").c_str());
+	(void)ret;
+}
+
 // -- Commands ----------------------------------------------------------------
 
 /**
@@ -176,6 +197,12 @@ static void cmd_add(const std::string& name) {
 	}
 	ofs << target << "\n";
 	std::cout << "Added bookmark '" << name << "' -> " << target << std::endl;
+
+	// Open global .bmkenv in editor if it exists
+	fs::path bmkenv_file = bookmarks_dir / (name + ".bmkenv");
+	if (fs::exists(bmkenv_file)) {
+		open_editor(bmkenv_file);
+	}
 }
 
 /**
@@ -345,13 +372,16 @@ static void cmd_load() {
 		exit(1);
 	}
 
-	fs::path bmkenv_path = find_bmkenv(current_path);
+	// Find bookmark name for this directory (for global .bmkenv fallback)
+	std::string bm_name = find_bookmark_name_for_dir(current_path);
+
+	fs::path bmkenv_path = find_bmkenv(current_path, bm_name);
 	if (bmkenv_path.empty()) {
 		std::cout << "# No .bmkenv found in " << current_path << std::endl;
 		return;
 	}
 
-	std::cout << "source .bmkenv" << std::endl;
+	std::cout << "source '" << bmkenv_path.string() << "'" << std::endl;
 }
 
 /**
@@ -385,6 +415,9 @@ static void cmd_mkenv() {
 	ofs << "\n";
 
 	std::cout << "Created .bmkenv in " << fs::current_path().string() << std::endl;
+
+	// Open the newly created .bmkenv in editor
+	open_editor(bmkenv_path);
 }
 
 /**
@@ -434,6 +467,36 @@ static void cmd_globalenv() {
 	std::cout << "Created global .bmkenv for '" << bm_name << "' in " << bmkenv_file.string() << std::endl;
 }
 
+/**
+ * @brief Opens the global .bmkenv for the current directory in the editor.
+ *
+ * Finds the bookmark pointing to the current directory, then opens
+ * <bookmarks_dir>/<name>.bmkenv in $BMK_EDITOR (default: nano).
+ * 
+ */
+static void cmd_editenv() {
+	fs::path current = fs::weakly_canonical(fs::current_path());
+	std::string bm_name = find_bookmark_name_for_dir(current);
+
+	if (bm_name.empty()) {
+		std::cerr << "Error: no bookmark found for '" << current.string() << "'" << std::endl;
+		std::cerr << "       : run 'bmk add <name>' first" << std::endl;
+		exit(1);
+	}
+
+	auto bookmarks_dir = get_bookmarks_dir();
+	fs::path bmkenv_file = bookmarks_dir / (bm_name + ".bmkenv");
+
+	if (!fs::exists(bmkenv_file)) {
+		std::cerr << "Error: no global .bmkenv found for '" << bm_name << "'" << std::endl;
+		std::cerr << "       : run 'bmk globalenv' first" << std::endl;
+		exit(1);
+	}
+
+	open_editor(bmkenv_file);
+	std::cout << "Edited global .bmkenv for '" << bm_name << "' in " << bmkenv_file.string() << std::endl;
+}
+
 static void print_usage() {
 	std::cout << R"(bmk — Bookmark Manager
 
@@ -446,6 +509,7 @@ Usage:
   bmk load            Source .bmkenv in current directory
   bmk mkenv           Create a local boilerplate .bmkenv file
   bmk globalenv       Create a global .bmkenv next to the matching bookmark
+  bmk editenv         Edit the global .bmkenv for the current directory
 
 Notes:
   - Bookmarks are stored in: ~/.local/share/bmk/bookmarks/
@@ -479,6 +543,8 @@ int main(int argc, char* argv[]) {
 		cmd_mkenv();
 	} else if (cmd == "globalenv") {
 		cmd_globalenv();
+	} else if (cmd == "editenv") {
+		cmd_editenv();
 	} else if (cmd == "--help" || cmd == "-h") {
 		print_usage();
 	} else {
