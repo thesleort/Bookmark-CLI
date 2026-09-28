@@ -281,7 +281,7 @@ static void cmd_ls() {
 	// Collect and sort — use recursive_iterator to handle subdirectory bookmarks
 	std::vector<std::pair<std::string, std::string>> bookmarks;
 	for (const auto& entry : fs::recursive_directory_iterator(bookmarks_dir)) {
-		if (entry.is_regular_file()) {
+		if (entry.is_regular_file() && entry.path().extension() == ".bmk") {
 			std::ifstream ifs(entry.path());
 			std::string path;
 			std::getline(ifs, path);
@@ -381,6 +381,7 @@ static void cmd_load() {
 		return;
 	}
 
+	std::cout << "echo \"bmkenv: " << bmkenv_path.string() << "\"" << std::endl;
 	std::cout << "source '" << bmkenv_path.string() << "'" << std::endl;
 }
 
