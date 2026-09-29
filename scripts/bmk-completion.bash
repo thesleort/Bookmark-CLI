@@ -33,7 +33,7 @@ _bmk_completion() {
 			return 0
 			;;
 		*)
-			COMPREPLY=( $(compgen -W "ls go add rm rename load mkenv globalenv editenv --help -h" -- "$cur") )
+			COMPREPLY=( $(compgen -W "ls go add rm rename load mkenv globalenv editgenv --help -h" -- "$cur") )
 			;;
 	esac
 }

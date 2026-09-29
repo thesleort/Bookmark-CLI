@@ -23,7 +23,7 @@ _bmk() {
 		'load:Source .bmkenv in current directory'
 		'mkenv:Create a boilerplate .bmkenv file'
 		'globalenv:Create a global .bmkenv next to the matching bookmark'
-		'editenv:Edit the global .bmkenv for the current directory'
+		'editgenv:Edit the global .bmkenv for the current directory'
 	)
 
 	# Get bookmark names

@@ -189,6 +189,12 @@ static void cmd_add(const std::string& name) {
 		exit(1);
 	}
 
+	// Create parent directories for names containing a slash (e.g. 'website/exhibitions')
+	auto parent_dir = bookmark_file.parent_path();
+	if (!parent_dir.empty() && parent_dir != bookmarks_dir) {
+		fs::create_directories(parent_dir);
+	}
+
 	std::string target = fs::weakly_canonical(fs::current_path()).string();
 	std::ofstream ofs(bookmark_file);
 	if (!ofs) {
@@ -475,7 +481,7 @@ static void cmd_globalenv() {
  * <bookmarks_dir>/<name>.bmkenv in $BMK_EDITOR (default: nano).
  * 
  */
-static void cmd_editenv() {
+static void cmd_editgenv() {
 	fs::path current = fs::weakly_canonical(fs::current_path());
 	std::string bm_name = find_bookmark_name_for_dir(current);
 
@@ -510,14 +516,13 @@ Usage:
   bmk load            Source .bmkenv in current directory
   bmk mkenv           Create a local boilerplate .bmkenv file
   bmk globalenv       Create a global .bmkenv next to the matching bookmark
-  bmk editenv         Edit the global .bmkenv for the current directory
+  bmk editgenv         Edit the global .bmkenv for the current directory
 
 Notes:
   - Bookmarks are stored in: ~/.local/share/bmk/bookmarks/
   - Each bookmark is a <name>.bmk file containing the target directory path
   - Global .bmkenv files are stored as <bookmarks_dir>/<name>.bmkenv
-  - .bmkenv lookup: local first (in directory tree), then global fallback
-  - Use eval $(bmk go <name>) to change directory and load .bmkenv)";
+  - .bmkenv lookup: local first (in directory tree), then global fallback)";
 }
 
 int main(int argc, char* argv[]) {
@@ -544,8 +549,8 @@ int main(int argc, char* argv[]) {
 		cmd_mkenv();
 	} else if (cmd == "globalenv") {
 		cmd_globalenv();
-	} else if (cmd == "editenv") {
-		cmd_editenv();
+	} else if (cmd == "editgenv") {
+		cmd_editgenv();
 	} else if (cmd == "--help" || cmd == "-h") {
 		print_usage();
 	} else {
