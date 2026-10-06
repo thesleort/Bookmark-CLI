@@ -70,7 +70,7 @@ bmk mkenv
 bmk globalenv
 
 # Edit the global .bmkenv for the current directory's bookmark
-bmk editenv
+bmk editgenv
 ```
 
 ## Storage
@@ -120,6 +120,30 @@ PS1='[myproject] '"$PS1"
 ```
 
 Use `bmk mkenv` to create a boilerplate `.bmkenv` file in the current directory.
+
+### Shell Functions
+
+`.bmkenv` files can also contain shell functions. Here is a minimal example of a function that accepts arguments:
+
+```bash
+# .bmkenv — Shell functions with arguments
+
+# Greet someone by name (takes one argument)
+greet() {
+  echo "Hello, $1!"
+}
+
+# Usage: greet Troels
+# Output: Hello, Troels!
+
+# ── Aliases ──
+alias ll='ls -la'
+
+# ── Environment Variables ──
+export MY_PROJECT_DIR='/home/user/myproject'
+```
+
+These functions are sourced into your shell when you navigate to the bookmarked directory, so they are immediately available for use.
 
 ## Environment Variables
 
