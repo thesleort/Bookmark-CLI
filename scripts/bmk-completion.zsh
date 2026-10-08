@@ -49,3 +49,16 @@ _bmk() {
 }
 
 compdef _bmk bmk
+
+# bmg — Zsh completion for the "bmk go" shorthand
+_bmg() {
+	local bmks
+
+	# Get bookmark names
+	bmks=$(${_BMK_BIN:-bmk} ls 2>/dev/null | awk 'NR>2 {print $1}')
+
+	# Complete with bookmark names
+	compadd -M 'm:{a-z}={A-Z} M:{a-z}={A-Z}' -- $bmks
+}
+
+compdef _bmg bmg

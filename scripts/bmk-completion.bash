@@ -39,3 +39,17 @@ _bmk_completion() {
 }
 
 complete -F _bmk_completion bmk
+
+# bmg — Bash completion for the "bmk go" shorthand
+_bmg_completion() {
+	local cur prev words cword
+	_init_completion || return
+
+	# Get list of bookmarks
+	local bmks
+	bmks=$("$_BMK_BIN" ls 2>/dev/null | awk 'NR>2 {print $1}')
+
+	COMPREPLY=( $(compgen -W "$bmks" -- "$cur") )
+}
+
+complete -F _bmg_completion bmg
