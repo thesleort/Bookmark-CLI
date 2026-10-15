@@ -20,8 +20,7 @@ install: build
 	@mkdir -p $(BIN)
 	@cp build/bmkbin $(BINARY_DIR)/bmkbin
 	@cp scripts/bmk-wrapper.sh $(BIN)/bmk
-	@cp scripts/bmg-wrapper.sh $(BIN)/bmg
-	@chmod +x $(BINARY_DIR)/bmkbin $(BIN)/bmk $(BIN)/bmg
+	@chmod +x $(BINARY_DIR)/bmkbin $(BIN)/bmk
 	@# Install completion scripts
 	@cp scripts/bmk-completion.bash $(BINARY_DIR)/completion.bash
 	@cp scripts/bmk-completion.zsh $(BINARY_DIR)/completion.zsh

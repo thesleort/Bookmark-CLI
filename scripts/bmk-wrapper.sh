@@ -57,3 +57,22 @@ _bmk() {
 }
 
 alias bmk=_bmk
+
+# bmg — Shorthand for "bmk go"
+_bmg() {
+		if [[ $# -eq 0 ]]; then
+				echo "Usage: bmg <bookmark_name>" >&2
+				return 1
+		fi
+		local result
+		result=$("$_BMK_BIN" go "$@" 2>&1)
+		local status=$?
+		if [[ $status -eq 0 ]] && [[ -n "$result" ]]; then
+				eval "$result"
+		else
+				echo "$result" >&2
+				return $status
+		fi
+}
+
+alias bmg=_bmg
