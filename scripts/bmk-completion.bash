@@ -20,7 +20,7 @@ _bmk_completion() {
 	bmks=$("$_BMK_BIN" ls 2>/dev/null | awk 'NR>2 {print $1}')
 
 	case "$prev" in
-		go|add|rm)
+		go|add|rm|copygenv)
 			COMPREPLY=( $(compgen -W "$bmks" -- "$cur") )
 			return 0
 			;;
@@ -33,7 +33,7 @@ _bmk_completion() {
 			return 0
 			;;
 		*)
-			COMPREPLY=( $(compgen -W "ls go add rm rename load mkenv globalenv editgenv --help -h" -- "$cur") )
+			COMPREPLY=( $(compgen -W "ls go add rm rename load mkenv globalenv editgenv copygenv --help -h" -- "$cur") )
 			;;
 	esac
 }

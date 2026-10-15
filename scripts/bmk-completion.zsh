@@ -24,6 +24,7 @@ _bmk() {
 		'mkenv:Create a boilerplate .bmkenv file'
 		'globalenv:Create a global .bmkenv next to the matching bookmark'
 		'editgenv:Edit the global .bmkenv for the current directory'
+		'copygenv:Copy global .bmkenv from another bookmark'
 	)
 
 	# Get bookmark names
@@ -37,7 +38,7 @@ _bmk() {
 
 	local cmd="${words[2]}"
 	case "$cmd" in
-		go|add|rm)
+		go|add|rm|copygenv)
 			# Complete with bookmark names
 			compadd -M 'm:{a-z}={A-Z} M:{a-z}={A-Z}' -- $bmks
 			;;
