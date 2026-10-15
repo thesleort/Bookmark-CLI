@@ -504,6 +504,57 @@ static void cmd_editgenv() {
 	std::cout << "Edited global .bmkenv for '" << bm_name << "' in " << bmkenv_file.string() << std::endl;
 }
 
+/**
+ * @brief Copy global .bmkenv from a source bookmark to the current directory's bookmark.
+ *
+ * Reads <bookmarks_dir>/<source_name>.bmkenv and writes it to
+ * <bookmarks_dir>/<current_bookmark_name>.bmkenv (creating it if needed).
+ * 
+ */
+static void cmd_copygenv(const std::string& source_name) {
+	// Validate source bookmark exists
+	auto bookmarks_dir = get_bookmarks_dir();
+	fs::path source_bmkenv = bookmarks_dir / (source_name + ".bmkenv");
+
+	if (!fs::exists(source_bmkenv)) {
+		std::cerr << "Error: no global .bmkenv found for source bookmark '" << source_name << "'" << std::endl;
+		std::cerr << "       : run 'bmk globalenv' for '" << source_name << "' first" << std::endl;
+		exit(1);
+	}
+
+	// Find current directory's bookmark
+	fs::path current = fs::weakly_canonical(fs::current_path());
+	std::string current_bm_name = find_bookmark_name_for_dir(current);
+
+	if (current_bm_name.empty()) {
+		std::cerr << "Error: no bookmark found for '" << current.string() << "'" << std::endl;
+		std::cerr << "       : run 'bmk add <name>' first" << std::endl;
+		exit(1);
+	}
+
+	// Read source .bmkenv
+	std::ifstream ifs(source_bmkenv);
+	std::string content((std::istreambuf_iterator<char>(ifs)),
+						std::istreambuf_iterator<char>());
+	if (ifs.bad()) {
+		std::cerr << "Error: cannot read " << source_bmkenv.string() << std::endl;
+		exit(1);
+	}
+
+	// Write to target bookmark's global .bmkenv
+	fs::path target_bmkenv = bookmarks_dir / (current_bm_name + ".bmkenv");
+	std::ofstream ofs(target_bmkenv);
+	if (!ofs) {
+		std::cerr << "Error: cannot write to " << target_bmkenv.string() << std::endl;
+		exit(1);
+	}
+	ofs << content;
+	ofs.close();
+
+	std::cout << "Copied global .bmkenv from '" << source_name << "' to '"
+			  << current_bm_name << "' -> " << target_bmkenv.string() << std::endl;
+}
+
 static void print_usage() {
 	std::cout << R"(bmk — Bookmark Manager
 
@@ -516,7 +567,8 @@ Usage:
   bmk load            Source .bmkenv in current directory
   bmk mkenv           Create a local boilerplate .bmkenv file
   bmk globalenv       Create a global .bmkenv next to the matching bookmark
-  bmk editgenv         Edit the global .bmkenv for the current directory
+  bmk editgenv        Edit the global .bmkenv for the current directory
+  bmk copygenv <name> Copy global .bmkenv from <name> to current directory's bookmark
 
 Notes:
   - Bookmarks are stored in: ~/.local/share/bmk/bookmarks/
@@ -551,6 +603,8 @@ int main(int argc, char* argv[]) {
 		cmd_globalenv();
 	} else if (cmd == "editgenv") {
 		cmd_editgenv();
+	} else if (cmd == "copygenv" && argc >= 3) {
+		cmd_copygenv(argv[2]);
 	} else if (cmd == "--help" || cmd == "-h") {
 		print_usage();
 	} else {
